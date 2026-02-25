@@ -8,17 +8,25 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node src/cli.ts"
+    "dev": "ts-node src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "keywords": ["git", "release", "changelog", "cli"],
+  "keywords": [
+    "git",
+    "release",
+    "changelog",
+    "cli"
+  ],
   "license": "MIT",
   "dependencies": {
     "commander": "^12.1.0",
     "simple-git": "^3.27.0"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
     "@types/node": "^22.0.0",
-    "ts-node": "^10.9.0"
+    "ts-node": "^10.9.0",
+    "typescript": "^5.6.0",
+    "vitest": "^4.0.18"
   }
 }
