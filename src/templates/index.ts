@@ -44,7 +44,7 @@ export const PR_TEMPLATE = `## Summary
 `;
 
 export const SCAFFOLD_FILES: readonly ScaffoldFile[] = [
-    { relativePath: 'README.md', content: README_TEMPLATE },
-    { relativePath: 'CHANGELOG.md', content: CHANGELOG_TEMPLATE },
-    { relativePath: '.github/PULL_REQUEST_TEMPLATE.md', content: PR_TEMPLATE },
+  { relativePath: 'README.md', content: README_TEMPLATE },
+  { relativePath: 'CHANGELOG.md', content: CHANGELOG_TEMPLATE },
+  { relativePath: '.github/PULL_REQUEST_TEMPLATE.md', content: PR_TEMPLATE },
 ] as const;

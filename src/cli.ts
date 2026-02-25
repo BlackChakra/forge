@@ -11,52 +11,49 @@ import { logger } from './logger';
 
 const program = new Command();
 
-program
-    .name('forge')
-    .description('A git-first release engineering toolkit')
-    .version('0.1.0');
+program.name('forge').description('A git-first release engineering toolkit').version('0.1.0');
 
 // ── forge init ───────────────────────────────────────────────────────
 program
-    .command('init')
-    .description('Scaffold project files (README, CHANGELOG, PR template)')
-    .option('-f, --force', 'Overwrite existing files', false)
-    .action(async (opts) => {
-        await runInit({ force: opts.force });
-    });
+  .command('init')
+  .description('Scaffold project files (README, CHANGELOG, PR template)')
+  .option('-f, --force', 'Overwrite existing files', false)
+  .action(async (opts) => {
+    await runInit({ force: opts.force });
+  });
 
 // ── forge summarize ──────────────────────────────────────────────────
 program
-    .command('summarize')
-    .description('Summarize commits since the latest tag')
-    .action(async () => {
-        await runSummarize();
-    });
+  .command('summarize')
+  .description('Summarize commits since the latest tag')
+  .action(async () => {
+    await runSummarize();
+  });
 
 // ── forge release ────────────────────────────────────────────────────
 program
-    .command('release')
-    .description('Generate changelog entry and PR description')
-    .requiredOption('--ver <version>', 'Release version (e.g. 1.0.0)')
-    .option('-w, --write', 'Write to CHANGELOG.md and PR_DESCRIPTION.generated.md', false)
-    .action(async (opts) => {
-        await runRelease({ version: opts.ver, write: opts.write });
-    });
+  .command('release')
+  .description('Generate changelog entry and PR description')
+  .requiredOption('--ver <version>', 'Release version (e.g. 1.0.0)')
+  .option('-w, --write', 'Write to CHANGELOG.md and PR_DESCRIPTION.generated.md', false)
+  .action(async (opts) => {
+    await runRelease({ version: opts.ver, write: opts.write });
+  });
 
 // ── Error boundary ───────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-    try {
-        await program.parseAsync();
-    } catch (err) {
-        if (err instanceof ForgeError) {
-            logger.error(err.message);
-            process.exitCode = err.exitCode;
-        } else {
-            logger.error(err instanceof Error ? err.message : String(err));
-            process.exitCode = 1;
-        }
+  try {
+    await program.parseAsync();
+  } catch (err) {
+    if (err instanceof ForgeError) {
+      logger.error(err.message);
+      process.exitCode = err.exitCode;
+    } else {
+      logger.error(err instanceof Error ? err.message : String(err));
+      process.exitCode = 1;
     }
+  }
 }
 
 main();
