@@ -4,6 +4,9 @@ import { LOG_DELIMITER, DEFAULT_COMMIT_LIMIT } from '../constants';
 import { GitError } from '../errors';
 import { parseCommitMessage, createEmptyGroups, freezeGroups } from './parser';
 
+// ── Semver-like tag pattern ──────────────────────────────────────────
+const SEMVER_TAG_RE = /^v?\d+\.\d+\.\d+/;
+
 // ── GitClient ────────────────────────────────────────────────────────
 // Encapsulates all git operations. Accepts a SimpleGit instance via
 // constructor for dependency injection (testability).
@@ -16,8 +19,28 @@ export class GitClient {
     }
 
     /**
+     * Verify that git is available and the cwd is inside a git repo.
+     * Throws GitError if either check fails.
+     */
+    async checkGitAvailable(): Promise<void> {
+        try {
+            await this.git.raw(['rev-parse', '--is-inside-work-tree']);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            if (message.includes('not a git repository')) {
+                throw new GitError(
+                    'Not a git repository. Run this command inside a git project.',
+                );
+            }
+            throw new GitError(
+                `Git is not available or not configured properly: ${message}`,
+            );
+        }
+    }
+
+    /**
      * Get the most recent semver-like tag reachable from HEAD.
-     * Returns null if no tags exist.
+     * Returns null if no tags exist or if the nearest tag is not semver-like.
      */
     async getLatestTag(): Promise<string | null> {
         try {
@@ -26,7 +49,13 @@ export class GitClient {
                 '--tags',
                 '--abbrev=0',
             ]);
-            return result.trim() || null;
+            const tag = result.trim();
+            if (!tag) return null;
+
+            // Filter out non-semver tags
+            if (!SEMVER_TAG_RE.test(tag)) return null;
+
+            return tag;
         } catch {
             return null;
         }
@@ -70,8 +99,11 @@ export class GitClient {
 
     /**
      * Get commits since the latest tag (or last N), parsed and grouped.
+     * Checks git availability first.
      */
     async getCommitsGrouped(): Promise<CommitSummary> {
+        await this.checkGitAvailable();
+
         const tag = await this.getLatestTag();
         const commits = await this.getCommitsSince(tag);
         const grouped = createEmptyGroups();
