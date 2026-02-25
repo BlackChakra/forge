@@ -1,61 +1,54 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { getCommitsGrouped } from '../git';
+import { getGitClient } from '../git';
 import { formatChangelogEntry, formatPRDescription } from '../formatter';
 import { ReleaseOptions } from '../types';
+import { CHANGELOG_FILENAME, CHANGELOG_HEADER, GENERATED_PR_FILENAME } from '../constants';
+import { ValidationError } from '../errors';
+import { resolveCwd, writeFileSafe, prependEntry } from '../fs';
+import { logger } from '../logger';
+
+// ── Semver validation ────────────────────────────────────────────────
+const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[\w.]+)?(?:\+[\w.]+)?$/;
+
+function validateVersion(version: string): void {
+    if (!SEMVER_RE.test(version)) {
+        throw new ValidationError(
+            `Invalid version "${version}". Expected semver format (e.g. 1.0.0, 2.1.0-beta.1).`,
+        );
+    }
+}
 
 // ── Command handler ──────────────────────────────────────────────────
 
 export async function runRelease(options: ReleaseOptions): Promise<void> {
-    const { grouped, totalCommits } = await getCommitsGrouped();
+    validateVersion(options.version);
+
+    const client = getGitClient();
+    const { grouped, totalCommits } = await client.getCommitsGrouped();
 
     if (totalCommits === 0) {
-        console.log('No commits found. Nothing to release.');
+        logger.info('No commits found. Nothing to release.');
         return;
     }
 
-    const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const date = new Date().toISOString().slice(0, 10);
     const changelogEntry = formatChangelogEntry(grouped, options.version, date);
     const prDescription = formatPRDescription(grouped, options.version);
 
     if (options.write) {
-        writeChangelog(changelogEntry);
-        writePRDescription(prDescription);
-        console.log(`\n✅ Release ${options.version} artifacts written:`);
-        console.log('   • CHANGELOG.md (updated)');
-        console.log('   • PR_DESCRIPTION.generated.md (created)');
+        const changelogPath = resolveCwd(CHANGELOG_FILENAME);
+        const prPath = resolveCwd(GENERATED_PR_FILENAME);
+
+        prependEntry(changelogPath, CHANGELOG_HEADER, changelogEntry);
+        writeFileSafe(prPath, prDescription);
+
+        logger.blank();
+        logger.success(`Release ${options.version} artifacts written:`);
+        logger.raw(`   • ${CHANGELOG_FILENAME} (updated)`);
+        logger.raw(`   • ${GENERATED_PR_FILENAME} (created)`);
     } else {
-        console.log('═══ CHANGELOG ENTRY ═══\n');
-        console.log(changelogEntry);
-        console.log('═══ PR DESCRIPTION ═══\n');
-        console.log(prDescription);
+        logger.header('CHANGELOG ENTRY');
+        logger.raw(changelogEntry);
+        logger.header('PR DESCRIPTION');
+        logger.raw(prDescription);
     }
-}
-
-// ── File writers ─────────────────────────────────────────────────────
-
-function writeChangelog(entry: string): void {
-    const cwd = process.cwd();
-    const filePath = path.resolve(cwd, 'CHANGELOG.md');
-
-    if (fs.existsSync(filePath)) {
-        const existing = fs.readFileSync(filePath, 'utf-8');
-        // Insert the new entry after the first heading line (# Changelog ...)
-        const headerEnd = existing.indexOf('\n');
-        if (headerEnd !== -1) {
-            const header = existing.slice(0, headerEnd + 1);
-            const rest = existing.slice(headerEnd + 1);
-            fs.writeFileSync(filePath, `${header}\n${entry}\n${rest}`, 'utf-8');
-        } else {
-            fs.writeFileSync(filePath, `${existing}\n\n${entry}`, 'utf-8');
-        }
-    } else {
-        fs.writeFileSync(filePath, `# Changelog\n\n${entry}`, 'utf-8');
-    }
-}
-
-function writePRDescription(content: string): void {
-    const cwd = process.cwd();
-    const filePath = path.resolve(cwd, 'PR_DESCRIPTION.generated.md');
-    fs.writeFileSync(filePath, content, 'utf-8');
 }

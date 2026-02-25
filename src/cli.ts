@@ -4,6 +4,10 @@ import { Command } from 'commander';
 import { runInit } from './commands/init';
 import { runSummarize } from './commands/summarize';
 import { runRelease } from './commands/release';
+import { ForgeError } from './errors';
+import { logger } from './logger';
+
+// ── Program ──────────────────────────────────────────────────────────
 
 const program = new Command();
 
@@ -39,4 +43,20 @@ program
         await runRelease({ version: opts.ver, write: opts.write });
     });
 
-program.parse();
+// ── Error boundary ───────────────────────────────────────────────────
+
+async function main(): Promise<void> {
+    try {
+        await program.parseAsync();
+    } catch (err) {
+        if (err instanceof ForgeError) {
+            logger.error(err.message);
+            process.exitCode = err.exitCode;
+        } else {
+            logger.error(err instanceof Error ? err.message : String(err));
+            process.exitCode = 1;
+        }
+    }
+}
+
+main();
