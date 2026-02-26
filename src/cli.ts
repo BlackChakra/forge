@@ -5,6 +5,7 @@ import { runInit } from './commands/init';
 import { runSummarize } from './commands/summarize';
 import { runRelease } from './commands/release';
 import { runVersion } from './commands/version';
+import { runAudit } from './commands/audit';
 import { ForgeError } from './errors';
 import { logger } from './logger';
 
@@ -41,7 +42,7 @@ program
     await runRelease({ version: opts.ver, write: opts.write });
   });
 
-// ── forge version ────────────────────────────────────────────────────
+// ── forge ver ────────────────────────────────────────────────────────
 program
   .command('ver')
   .description('Show or bump the project version')
@@ -50,6 +51,14 @@ program
   .option('--suggest', 'Suggest a bump type based on commits', false)
   .action(async (opts) => {
     await runVersion({ bump: opts.bump, tag: opts.tag, suggest: opts.suggest });
+  });
+
+// ── forge audit ──────────────────────────────────────────────────────
+program
+  .command('audit')
+  .description('Audit the repository for release readiness')
+  .action(async () => {
+    await runAudit();
   });
 
 // ── Error boundary ───────────────────────────────────────────────────
