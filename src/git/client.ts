@@ -111,6 +111,19 @@ export class GitClient {
       totalCommits: commits.length,
     };
   }
+
+  /**
+   * Create an annotated git tag.
+   */
+  async createTag(tagName: string): Promise<void> {
+    await this.checkGitAvailable();
+    try {
+      await this.git.addAnnotatedTag(tagName, tagName);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new GitError(`Failed to create tag "${tagName}": ${message}`);
+    }
+  }
 }
 
 // ── Default singleton ────────────────────────────────────────────────

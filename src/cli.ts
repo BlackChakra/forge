@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { runInit } from './commands/init';
 import { runSummarize } from './commands/summarize';
 import { runRelease } from './commands/release';
+import { runVersion } from './commands/version';
 import { ForgeError } from './errors';
 import { logger } from './logger';
 
@@ -38,6 +39,17 @@ program
   .option('-w, --write', 'Write to CHANGELOG.md and PR_DESCRIPTION.generated.md', false)
   .action(async (opts) => {
     await runRelease({ version: opts.ver, write: opts.write });
+  });
+
+// ── forge version ────────────────────────────────────────────────────
+program
+  .command('ver')
+  .description('Show or bump the project version')
+  .option('--bump <type>', 'Bump version: major, minor, or patch')
+  .option('--tag', 'Create an annotated git tag after bumping', false)
+  .option('--suggest', 'Suggest a bump type based on commits', false)
+  .action(async (opts) => {
+    await runVersion({ bump: opts.bump, tag: opts.tag, suggest: opts.suggest });
   });
 
 // ── Error boundary ───────────────────────────────────────────────────
